@@ -1,4 +1,4 @@
-module github.com/hrapovd1/hw01_hello_now
+module github.com/hrapovd1/otus_go2020/hw01_hello_now
 
 go 1.14
 
