@@ -78,8 +78,15 @@ func Unpack(str string) (string, error) {
 					}
 				}
 			case string(currChar) == backSlash:
-				if string(prevChar) == backSlash {
-					strOut.WriteString(string(prevChar))
+				// Проверка на эскейп последовательность
+				if notLastChar {
+					if unicode.IsDigit(rune(str[pos+1])) || string(str[pos+1]) == backSlash {
+						isDouble = true
+						break
+					}
+				}
+				if isDouble {
+					break
 				}
 			default:
 				if string(prevChar) == backSlash {
