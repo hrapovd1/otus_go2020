@@ -40,12 +40,11 @@ func Unpack(str string) (string, error) {
 		case pos == 0:
 			switch {
 			case unicode.IsDigit(currChar): // Если первая цифра, то выйти с ошибкой
-				//return "", errors.New("wrong string, it can't start from digit")
 				return "", ErrInvalidString
-			case notLastChar && unicode.IsDigit(strRune[pos+1]): // Если следующий символ цифра, то обработать на следующем цикле
+			case notLastChar && unicode.IsDigit(strRune[pos+1]):
 				break
-			case currChar == backSlash: // Если эскейп экран, то обработать на следующем цикле
-				break
+			case notLastChar && currChar == backSlash:
+				isDouble = true
 			default: // Если не цифра, эскейп экран и следующий символ не цифра, то записываем в выходную строку
 				strOut.WriteRune(currChar)
 			}
@@ -54,28 +53,58 @@ func Unpack(str string) (string, error) {
 		case pos != 0:
 			switch {
 			case unicode.IsDigit(currChar):
-				// Проверка что это не число
-				if notLastChar && unicode.IsDigit(strRune[pos+1]) || unicode.IsDigit(strRune[pos-1]) {
-					//	return "", errors.New("wrong string, it can be only digit, not numeric")
-					return "", ErrInvalidString
-				}
 				// Преобразование цифры из строки в целое
 				currDigit, err := strconv.Atoi(string(currChar))
 				if err != nil {
 					return "", err
 				}
 
-				switch {
-				case currDigit == 0:
-					break
-				case currDigit > 0:
-					writedChar := string(prevChar)
-					// Если предыдущий символ из эскейп последовательности
-					if isDouble {
-						writedChar = string(strRune[pos-2 : pos])
+				if isDouble {
+					switch {
+					case unicode.IsDigit(prevChar):
+						if currDigit > 0 {
+							for count := currDigit; count > 0; count-- {
+								strOut.WriteRune(prevChar)
+							}
+						}
+						isDouble = false // После обработки экранирования предыдущей цифры, снимаю флаг
+					case prevChar == backSlash:
+						switch {
+						case notLastChar && unicode.IsDigit(strRune[pos+1]):
+							if pos-2 >= 0 { // Проверяю что есть два символа перед текущим
+								if strRune[pos-2] == backSlash { // Проверяю что ранее было 2 обратных слеша
+									return "", ErrInvalidString // если это так, то это ошибка \\dd
+								}
+							}
+							isDouble = false
+						case notLastChar || pos-2 >= 0:
+							if pos-2 >= 0 && strRune[pos-2] == backSlash {
+								if currDigit > 0 {
+									for count := currDigit; count > 0; count-- {
+										strOut.WriteRune(prevChar)
+									}
+								}
+							} else {
+								strOut.WriteRune(currChar)
+							}
+							isDouble = false
+						}
+					default:
+						if currDigit > 0 {
+							for count := currDigit; count > 0; count-- {
+								strOut.WriteString(string(strRune[pos-2 : pos]))
+							}
+						}
+						isDouble = false
 					}
-					for count := currDigit; count > 0; count-- {
-						strOut.WriteString(writedChar)
+				} else {
+					// Проверка что это не число
+					if notLastChar && unicode.IsDigit(strRune[pos+1]) || unicode.IsDigit(strRune[pos-1]) {
+						return "", ErrInvalidString
+					} else if currDigit > 0 {
+						for count := currDigit; count > 0; count-- {
+							strOut.WriteRune(prevChar)
+						}
 					}
 				}
 			case currChar == backSlash:
