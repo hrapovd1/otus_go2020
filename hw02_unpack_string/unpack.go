@@ -24,47 +24,63 @@ func Unpack(str string) (string, error) {
 	}
 
 	var strOut strings.Builder // Объект результирующей строки
-	isPrevDigit := false          // Флаг нахождения цифры в предыдущем символе
-	isDoubleDigit := false        // Флаг нахождения последовательности 2х цифр
-	isPrevSlash := false // Флаг обработки двойных слешей
-	isLastSymbol := false         // Флаг последнего символа
-	const backSlash = '\\'     // Оптимизаци линтера goconst
+	isPrevDigit := false       // Флаг нахождения цифры в предыдущем символе
+	waitSlash := false         // Флаг для комбинации вида \n
+	//	isDoubleDigit := false        // Флаг нахождения последовательности 2х цифр
+	//	isPrevSlash := false // Флаг обработки двойных слешей
+	const backSlash = '\\' // Оптимизаци линтера goconst
 
 	// Основной цикл перебора символов
-	for pos := len(strRune)-1; pos >= 0 ; pos-- {
-		// Для удобства понимания и работы с кодом определяю переменные следующего и текущего символов
-		var nextChar, currChar rune
-		if pos != 0 {
-			nextChar, currChar = strRune[pos-1], strRune[pos]
-		} else {
-			nextChar, currChar = 0, strRune[pos]
-		}
-		if pos == len(strRune)-1{
+	for pos := len(strRune) - 1; pos >= 0; pos-- {
+		// Для удобства понимания и работы с кодом определяю переменную текущего символа
+		currChar := strRune[pos]
+		isLastSymbol := false // Флаг последнего символа
+		if pos == len(strRune)-1 {
 			isLastSymbol = true
 		}
 
 		switch {
 		case unicode.IsDigit(currChar):
-			if isPrevDigit {
-				isPrevDigit = false
-				isDoubleDigit = true
-			} else {
+			switch {
+			case isPrevDigit:
+				return "", ErrInvalidString
+			default:
 				isPrevDigit = true
 			}
 		case currChar == backSlash:
+			//TODO: додумать разные комбинации
 			switch {
 			case isLastSymbol:
 				strOut.WriteRune(currChar)
 			case isPrevDigit:
-				strOut.WriteRune(strRune[pos + 1])
+				writeReapetedSymbol(string(currChar), strRune[pos+1], &strOut)
 				isPrevDigit = false
-			case isDoubleDigit:
-				writeReapetedSymbol(string(strRune[pos + 1]), strRune[pos + 2], &strOut)
-				isDoubleDigit = false
-			case isPrevSlash:
-				if pos+2
+			case waitSlash:
+				writeReapetedSymbol(string(strRune[pos:pos+2]), strRune[pos+1], &strOut)
+				waitSlash = false
+				isPrevDigit = false
+				/*			case isDoubleDigit:
+								writeReapetedSymbol(string(strRune[pos + 1]), strRune[pos + 2], &strOut)
+								isDoubleDigit = false
+							case isPrevSlash:
+								if pos+2 <= len(strRune)-1 && unicode.IsDigit(strRune[pos+2]){
+									writeReapetedSymbol(string(currChar),strRune[pos+2], &strOut)
+									isPrevSlash = false
+								} */
 			}
 		case !unicode.IsDigit(currChar):
+			switch {
+			case isLastSymbol:
+				strOut.WriteRune(currChar)
+			case isPrevDigit:
+				waitSlash = true
+			case waitSlash:
+				writeReapetedSymbol(string(strRune[pos+1]), strRune[pos+2], &strOut)
+				waitSlash = false
+				isPrevDigit = false
+			default:
+				strOut.WriteRune(currChar)
+			}
 		}
 	}
 	return strOut.String(), nil
@@ -73,13 +89,13 @@ func Unpack(str string) (string, error) {
 // Функция распаковки символа в выходную строку, принимает
 // символ или комбинацию, например \p, которые записываем = r
 // сколько раз повторить = r2
-// объект выходной строки s
+// объект выходной строки s.
 func writeReapetedSymbol(r string, r2 rune, s *strings.Builder) {
 	i, err := strconv.Atoi(string(r2))
-	if err != nil{
+	if err != nil {
 		log.Fatalf("Atoi error %v", err)
 	}
-	for ;i > 0; i--{
+	for ; i > 0; i-- {
 		s.WriteString(r)
 	}
 }
