@@ -15,38 +15,42 @@ func Unpack(str string) (string, error) {
 		return "", nil
 	}
 
+	strRune := []rune(str)
+
+	// Если первая цифра, то выйти с ошибкой
+	if unicode.IsDigit(strRune[0]) {
+		return "", ErrInvalidString
+	}
+
 	var strOut strings.Builder // Объект результирующей строки
 	isDouble := false          // Флаг для обработки эскейп последовательностей вида: '\n'
-	const backSlash = `\`      // Оптимизаци линтера goconst
+	const backSlash = '\\'     // Оптимизаци линтера goconst
 
 	// Основной цикл перебора символов
-	for pos := 0; pos < len(str); pos++ {
+	for pos := 0; pos < len(strRune); pos++ {
 		// Для удобства понимания и работы с кодом определяю переменные предыдущего и текущего символов
 		var prevChar, currChar rune
 		if pos > 0 {
-			prevChar, currChar = rune(str[pos-1]), rune(str[pos])
+			prevChar, currChar = strRune[pos-1], strRune[pos]
 		} else {
-			prevChar, currChar = 0, rune(str[pos])
+			prevChar, currChar = 0, strRune[pos]
 		}
-		notLastChar := true // Установка флага, что это не последний символ
+
 		// Проверка на последний символ
-		if pos == len(str)-1 {
+		notLastChar := true // Установка флага, что это не последний символ
+		if pos == len(strRune)-1 {
 			notLastChar = false
 		}
 
 		switch {
-		// Проверка первого символа на цифру и эскейп экран
 		case pos == 0:
 			switch {
-			case unicode.IsDigit(currChar): // Если первая цифра, то выйти с ошибкой
-				//return "", errors.New("wrong string, it can't start from digit")
-				return "", ErrInvalidString
-			case notLastChar && unicode.IsDigit(rune(str[pos+1])): // Если следующий символ цифра, то обработать на следующем цикле
+			case notLastChar && unicode.IsDigit(strRune[pos+1]): // Если следующий символ цифра, то обработать на следующем цикле
 				break
-			case string(currChar) == backSlash: // Если эскейп экран, то обработать на следующем цикле
+			case currChar == backSlash: // Если эскейп экранирование, то обработать на следующем цикле
 				break
-			default: // Если не цифра, эскейп экран и следующий символ не цифра, то записываем в выходную строку
-				strOut.WriteString(string(currChar))
+			default: // Если не цифра, эскейп экранирование и следующий символ не цифра, то записываем в выходную строку
+				strOut.WriteRune(currChar)
 			}
 
 		// Обработка символов кроме первого
@@ -54,43 +58,39 @@ func Unpack(str string) (string, error) {
 			switch {
 			case unicode.IsDigit(currChar):
 				// Проверка что это не число
-				if notLastChar && unicode.IsDigit(rune(str[pos+1])) || unicode.IsDigit(rune(str[pos-1])) {
+				if notLastChar && unicode.IsDigit(strRune[pos+1]) || unicode.IsDigit(strRune[pos-1]) {
 					//	return "", errors.New("wrong string, it can be only digit, not numeric")
 					return "", ErrInvalidString
 				}
+
 				// Преобразование цифры из строки в целое
 				currDigit, err := strconv.Atoi(string(currChar))
 				if err != nil {
 					return "", err
 				}
 
-				switch {
-				case currDigit == 0:
-					break
-				case currDigit > 0:
-					writedChar := string(prevChar)
-					// Если предыдущий символ из эскейп последовательности
-					if isDouble {
-						writedChar = str[pos-2 : pos]
-					}
-					for count := currDigit; count > 0; count-- {
-						strOut.WriteString(writedChar)
-					}
+				writedChar := string(prevChar)
+				// Если предыдущий символ из эскейп последовательности
+				if isDouble {
+					writedChar = string(strRune[pos-2 : pos])
 				}
-			case string(currChar) == backSlash:
-				if string(prevChar) == backSlash {
+				for count := currDigit; count > 0; count-- {
+					strOut.WriteString(writedChar)
+				}
+			case currChar == backSlash:
+				if prevChar == backSlash {
 					strOut.WriteString(string(prevChar))
 				}
 			default:
-				if string(prevChar) == backSlash {
+				if prevChar == backSlash {
 					// Проверка на эскейп последовательность
-					if notLastChar && unicode.IsDigit(rune(str[pos+1])) {
+					if notLastChar && unicode.IsDigit(strRune[pos+1]) {
 						isDouble = true
 						break
 					}
 					strOut.WriteString(string(prevChar))
 				}
-				if notLastChar && unicode.IsDigit(rune(str[pos+1])) {
+				if notLastChar && unicode.IsDigit(strRune[pos+1]) {
 					break
 				}
 				strOut.WriteString(string(currChar))
