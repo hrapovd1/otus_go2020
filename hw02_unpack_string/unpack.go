@@ -53,18 +53,18 @@ func Unpack(str string) (string, error) {
 			case isLastSymbol:
 				strOut.WriteRune(currChar)
 			case isPrevDigit:
-				writeReapetedSymbol(string(currChar), strRune[pos+1], &strOut)
+				writeRepeatedSymbol(string(currChar), strRune[pos+1], &strOut)
 				isPrevDigit = false
 			case waitSlash:
-				writeReapetedSymbol(string(strRune[pos:pos+2]), strRune[pos+1], &strOut)
+				writeRepeatedSymbol(string(strRune[pos:pos+2]), strRune[pos+1], &strOut)
 				waitSlash = false
 				isPrevDigit = false
 				/*			case isDoubleDigit:
-								writeReapetedSymbol(string(strRune[pos + 1]), strRune[pos + 2], &strOut)
+								writeRepeatedSymbol(string(strRune[pos + 1]), strRune[pos + 2], &strOut)
 								isDoubleDigit = false
 							case isPrevSlash:
 								if pos+2 <= len(strRune)-1 && unicode.IsDigit(strRune[pos+2]){
-									writeReapetedSymbol(string(currChar),strRune[pos+2], &strOut)
+									writeRepeatedSymbol(string(currChar),strRune[pos+2], &strOut)
 									isPrevSlash = false
 								} */
 			}
@@ -75,7 +75,7 @@ func Unpack(str string) (string, error) {
 			case isPrevDigit:
 				waitSlash = true
 			case waitSlash:
-				writeReapetedSymbol(string(strRune[pos+1]), strRune[pos+2], &strOut)
+				writeRepeatedSymbol(string(strRune[pos+1]), strRune[pos+2], &strOut)
 				waitSlash = false
 				isPrevDigit = false
 			default:
@@ -90,7 +90,7 @@ func Unpack(str string) (string, error) {
 // символ или комбинацию, например \p, которые записываем = r
 // сколько раз повторить = r2
 // объект выходной строки s.
-func writeReapetedSymbol(r string, r2 rune, s *strings.Builder) {
+func writeRepeatedSymbol(r string, r2 rune, s *strings.Builder) {
 	i, err := strconv.Atoi(string(r2))
 	if err != nil {
 		log.Fatalf("Atoi error %v", err)
