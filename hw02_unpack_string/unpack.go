@@ -43,6 +43,7 @@ func Unpack(str string) (string, error) {
 		}
 
 		switch {
+		// Обрабатываю первый символ
 		case pos == 0:
 			switch {
 			case notLastChar && unicode.IsDigit(strRune[pos+1]): // Если следующий символ цифра, то обработать на следующем цикле
