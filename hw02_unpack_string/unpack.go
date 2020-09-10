@@ -2,6 +2,7 @@ package hw02_unpack_string //nolint:golint,stylecheck
 
 import (
 	"errors"
+	"log"
 	"strconv"
 	"strings"
 	"unicode"
@@ -15,124 +16,70 @@ func Unpack(str string) (string, error) {
 		return "", nil
 	}
 
+	strRune := []rune(str) // Разделяю строку на руны
+
+	// Проверка на первую цифру
+	if unicode.IsDigit(strRune[0]) {
+		return "", ErrInvalidString
+	}
+
 	var strOut strings.Builder // Объект результирующей строки
-	isDouble := false          // Флаг для обработки эскейп последовательностей вида: '\n'
+	isPrevDigit := false          // Флаг нахождения цифры в предыдущем символе
+	isDoubleDigit := false        // Флаг нахождения последовательности 2х цифр
+	isPrevSlash := false // Флаг обработки двойных слешей
+	isLastSymbol := false         // Флаг последнего символа
 	const backSlash = '\\'     // Оптимизаци линтера goconst
-	strRune := []rune(str)
 
 	// Основной цикл перебора символов
-	for pos := 0; pos < len(strRune); pos++ {
-		// Для удобства понимания и работы с кодом определяю переменные предыдущего и текущего символов
-		var prevChar, currChar rune
-		if pos > 0 {
-			prevChar, currChar = strRune[pos-1], strRune[pos]
+	for pos := len(strRune)-1; pos >= 0 ; pos-- {
+		// Для удобства понимания и работы с кодом определяю переменные следующего и текущего символов
+		var nextChar, currChar rune
+		if pos != 0 {
+			nextChar, currChar = strRune[pos-1], strRune[pos]
 		} else {
-			prevChar, currChar = 0, strRune[pos]
+			nextChar, currChar = 0, strRune[pos]
 		}
-		notLastChar := true // Установка флага, что это не последний символ
-		// Проверка на последний символ
-		if pos == len(strRune)-1 {
-			notLastChar = false
+		if pos == len(strRune)-1{
+			isLastSymbol = true
 		}
 
 		switch {
-		// Проверка первого символа на цифру и эскейп экран
-		case pos == 0:
-			switch {
-			case unicode.IsDigit(currChar): // Если первая цифра, то выйти с ошибкой
-				return "", ErrInvalidString
-			case notLastChar && unicode.IsDigit(strRune[pos+1]):
-				break
-			case notLastChar && currChar == backSlash:
-				isDouble = true
-			default: // Если не цифра, эскейп экран и следующий символ не цифра, то записываем в выходную строку
-				strOut.WriteRune(currChar)
+		case unicode.IsDigit(currChar):
+			if isPrevDigit {
+				isPrevDigit = false
+				isDoubleDigit = true
+			} else {
+				isPrevDigit = true
 			}
-
-		// Обработка символов кроме первого
-		case pos != 0:
+		case currChar == backSlash:
 			switch {
-			case unicode.IsDigit(currChar):
-				// Преобразование цифры из строки в целое
-				currDigit, err := strconv.Atoi(string(currChar))
-				if err != nil {
-					return "", err
-				}
-
-				if isDouble {
-					switch {
-					case unicode.IsDigit(prevChar):
-						if currDigit > 0 {
-							for count := currDigit; count > 0; count-- {
-								strOut.WriteRune(prevChar)
-							}
-						}
-						isDouble = false // После обработки экранирования предыдущей цифры, снимаю флаг
-					case prevChar == backSlash:
-						switch {
-						case notLastChar && unicode.IsDigit(strRune[pos+1]):
-							if pos-2 >= 0 { // Проверяю что есть два символа перед текущим
-								if strRune[pos-2] == backSlash { // Проверяю что ранее было 2 обратных слеша
-									return "", ErrInvalidString // если это так, то это ошибка \\dd
-								}
-							}
-							isDouble = false
-						case notLastChar || pos-2 >= 0:
-							if pos-2 >= 0 && strRune[pos-2] == backSlash {
-								if currDigit > 0 {
-									for count := currDigit; count > 0; count-- {
-										strOut.WriteRune(prevChar)
-									}
-								}
-							} else {
-								strOut.WriteRune(currChar)
-							}
-							isDouble = false
-						}
-					default:
-						if currDigit > 0 {
-							for count := currDigit; count > 0; count-- {
-								strOut.WriteString(string(strRune[pos-2 : pos]))
-							}
-						}
-						isDouble = false
-					}
-				} else {
-					// Проверка что это не число
-					if notLastChar && unicode.IsDigit(strRune[pos+1]) || unicode.IsDigit(strRune[pos-1]) {
-						return "", ErrInvalidString
-					} else if currDigit > 0 {
-						for count := currDigit; count > 0; count-- {
-							strOut.WriteRune(prevChar)
-						}
-					}
-				}
-			case currChar == backSlash:
-				// Проверка на эскейп последовательность
-				if notLastChar {
-					if unicode.IsDigit(strRune[pos+1]) || strRune[pos+1] == backSlash {
-						isDouble = true
-						break
-					}
-				}
-				if isDouble {
-					break
-				}
-			default:
-				if prevChar == backSlash {
-					// Проверка на эскейп последовательность
-					if notLastChar && unicode.IsDigit(strRune[pos+1]) {
-						isDouble = true
-						break
-					}
-					strOut.WriteRune(prevChar)
-				}
-				if notLastChar && unicode.IsDigit(strRune[pos+1]) {
-					break
-				}
+			case isLastSymbol:
 				strOut.WriteRune(currChar)
+			case isPrevDigit:
+				strOut.WriteRune(strRune[pos + 1])
+				isPrevDigit = false
+			case isDoubleDigit:
+				writeReapetedSymbol(string(strRune[pos + 1]), strRune[pos + 2], &strOut)
+				isDoubleDigit = false
+			case isPrevSlash:
+				if pos+2
 			}
+		case !unicode.IsDigit(currChar):
 		}
 	}
 	return strOut.String(), nil
+}
+
+// Функция распаковки символа в выходную строку, принимает
+// символ или комбинацию, например \p, которые записываем = r
+// сколько раз повторить = r2
+// объект выходной строки s
+func writeReapetedSymbol(r string, r2 rune, s *strings.Builder) {
+	i, err := strconv.Atoi(string(r2))
+	if err != nil{
+		log.Fatalf("Atoi error %v", err)
+	}
+	for ;i > 0; i--{
+		s.WriteString(r)
+	}
 }
