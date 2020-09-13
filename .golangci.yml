@@ -17,7 +17,7 @@ linters:
     - wsl
 linters-settings:
   funlen:
-    statements: 50
+    statements: 55
     lines: 100
 
   gocognit:
