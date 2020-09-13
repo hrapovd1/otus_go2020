@@ -49,7 +49,11 @@ func Unpack(str string) (string, error) {
 			case notLastChar && unicode.IsDigit(strRune[pos+1]): // Если следующий символ цифра, то обработать на следующем цикле
 				break
 			case currChar == backSlash: // Если эскейп экранирование, то обработать на следующем цикле
-				break
+				if notLastChar {
+					break
+				} else {
+					strOut.WriteRune(currChar)
+				}
 			default: // Если не цифра, эскейп экранирование и следующий символ не цифра, то записываем в выходную строку
 				strOut.WriteRune(currChar)
 			}
