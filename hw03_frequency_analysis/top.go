@@ -1,8 +1,10 @@
 package hw03_frequency_analysis //nolint:golint,stylecheck
 
 import (
+	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 func Top10(inStr string) []string {
@@ -17,10 +19,10 @@ func Top10(inStr string) []string {
 		Count int
 	}
 
-	words := make([]wordRate, 1)                   // Слайс словесных структур
-	var outStr, tmpWords []string                  // Переменные используемые в обработке
-	tmpWordsMap := make(map[string]int)            // Словарь слов и их количества
-	tmpLines := strings.Split(inStr, string('\n')) // Разбиваю текст на строки
+	words := make([]wordRate, 1)                                    // Слайс словесных структур
+	var outStr, tmpWords []string                                   // Переменные используемые в обработке
+	tmpWordsMap := make(map[string]int)                             // Словарь слов и их количества
+	tmpLines := strings.Split(strings.ToLower(inStr), string('\n')) // Разбиваю текст на строки и делаю все буквы строчными
 
 	// Разделяю строки на слова во временный слайс
 	for _, sentence := range tmpLines {
@@ -33,8 +35,9 @@ func Top10(inStr string) []string {
 
 	// Собираю слова в словарь с одновременным подсчетом одинаковых
 	for i := 0; i < len(tmpWords); i++ {
-		if len(tmpWords[i]) > 0 {
-			tmpWordsMap[tmpWords[i]]++
+		cleanedWord := cleanPunct(tmpWords[i]) // Чищу слово от пунктуации
+		if len(cleanedWord) > 0 {
+			tmpWordsMap[cleanedWord]++
 		}
 	}
 
@@ -51,6 +54,19 @@ func Top10(inStr string) []string {
 	// и возврощаю полученный результат
 	for i := 0; i < 10; i++ {
 		outStr = append(outStr, words[i].Word)
+	}
+	fmt.Println(outStr)
+	return outStr
+}
+
+// Функция очистки слов от пунктуации.
+func cleanPunct(s string) string {
+	str := s
+	outStr := ""
+	for _, symbol := range str {
+		if !unicode.IsPunct(symbol) {
+			outStr += string(symbol)
+		}
 	}
 	return outStr
 }
