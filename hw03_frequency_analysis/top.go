@@ -1,6 +1,7 @@
 package hw03_frequency_analysis //nolint:golint,stylecheck
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"unicode"
@@ -54,6 +55,7 @@ func Top10(inStr string) []string {
 	for i := 0; i < 10; i++ {
 		outStr = append(outStr, words[i].Word)
 	}
+	fmt.Println(outStr)
 	return outStr
 }
 
