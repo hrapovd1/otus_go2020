@@ -9,7 +9,7 @@ import (
 func Top10(inStr string) []string {
 	// Прооверка на пустую строку
 	if len(inStr) == 0 {
-		return []string{}
+		return nil
 	}
 
 	// Структура для слова и его счетчика
@@ -18,18 +18,17 @@ func Top10(inStr string) []string {
 		Count int
 	}
 
-	words := make([]wordRate, 1)                                    // Слайс словесных структур
-	var outStr, tmpWords []string                                   // Переменные используемые в обработке
+	words := []wordRate{}                                           // Слайс словесных структур
+	outStr, tmpWords := []string{}, []string{}                      // Переменные используемые в обработке
+	var rateCount int                                               // Количество возвращаемых первых слов
 	tmpWordsMap := make(map[string]int)                             // Словарь слов и их количества
 	tmpLines := strings.Split(strings.ToLower(inStr), string('\n')) // Разбиваю текст на строки и делаю все буквы строчными
 
 	// Разделяю строки на слова во временный слайс
 	for _, sentence := range tmpLines {
-		for _, word := range strings.Split(sentence, string(' ')) {
-			if len(word) > 0 {
-				tmpWords = append(tmpWords, strings.TrimSpace(word))
-			}
-		}
+		tmpWords = append(tmpWords, strings.FieldsFunc(sentence, func(r rune) bool {
+			return !unicode.IsLetter(r) && !unicode.IsDigit(r) && !unicode.IsPunct(r)
+		})...)
 	}
 
 	// Собираю слова в словарь с одновременным подсчетом одинаковых
@@ -41,6 +40,7 @@ func Top10(inStr string) []string {
 	}
 
 	// Преобразую словарь слов в слайс структуры слово-счетчик для сортировки
+	words = make([]wordRate, 0, len(tmpWordsMap))
 	for word, count := range tmpWordsMap {
 		words = append(words, wordRate{Word: word, Count: count})
 	}
@@ -51,7 +51,12 @@ func Top10(inStr string) []string {
 
 	// Беру первые 10 слов из сортированного по счетчику слайса
 	// и возврощаю полученный результат
-	for i := 0; i < 10; i++ {
+	if len(words) < 11 {
+		rateCount = len(words)
+	} else {
+		rateCount = 10
+	}
+	for i := 0; i < rateCount; i++ {
 		outStr = append(outStr, words[i].Word)
 	}
 	return outStr
