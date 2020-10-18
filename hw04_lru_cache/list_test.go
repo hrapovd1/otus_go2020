@@ -48,4 +48,36 @@ func TestList(t *testing.T) {
 		}
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
+
+	t.Run("mix", func(t *testing.T) {
+		l := NewList()
+		v1 := l.PushBack("first")
+		v2 := l.PushBack(10)
+		l.PushFront(1.0)
+		l.MoveToFront(v1)
+		l.Remove(v2)
+
+		require.Equal(t, 2, l.Len())
+		require.Equal(t, 1.0, l.Back().Value)
+		require.Equal(t, "first", l.Front().Value)
+	})
+
+	t.Run("only two", func(t *testing.T) {
+		l := NewList()
+		v1 := l.PushBack("first")
+		v2 := l.PushFront(10)
+
+		require.Equal(t, "first", l.Back().Value)
+		require.Equal(t, 10, l.Front().Value)
+
+		l.MoveToFront(v1)
+
+		require.Equal(t, 10 , l.Back().Value)
+		require.Equal(t, "first", l.Front().Value)
+
+		l.Remove(v2)
+
+		require.Equal(t, "first", l.Back().Value)
+		require.Equal(t, "first", l.Front().Value)
+	})
 }
