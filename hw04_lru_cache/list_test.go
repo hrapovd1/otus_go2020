@@ -72,7 +72,7 @@ func TestList(t *testing.T) {
 
 		l.MoveToFront(v1)
 
-		require.Equal(t, 10 , l.Back().Value)
+		require.Equal(t, 10, l.Back().Value)
 		require.Equal(t, "first", l.Front().Value)
 
 		l.Remove(v2)

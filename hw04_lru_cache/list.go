@@ -16,7 +16,7 @@ type ListItem struct {
 	Prev  *ListItem
 }
 
-func NewList() *ListItem {
+func NewList() List {
 	l := new(ListItem)
 	l.Value = 0
 	l.Next = nil
