@@ -15,3 +15,10 @@ linters:
     - nakedret
     - nlreturn
     - wsl
+linters-settings:
+  funlen:
+    statements: 55
+    lines: 100
+
+  gocognit:
+    min-complexity: 60
